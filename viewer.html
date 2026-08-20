@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>模型资产工作台 — 星球漫游者</title>
+  <style>
+    body { overflow: hidden; }
+    #vw-canvas { position: fixed; inset: 0; width: 100%; height: 100%; display: block; background: linear-gradient(180deg, #2a3550 0%, #1a2233 55%, #121a28 100%); }
+    #vw-ui { position: fixed; top: 0; left: 0; z-index: 50; width: 230px; height: 100%; background: var(--panel); border-right: 1px solid var(--line); padding: 12px; overflow-y: auto; }
+    #vw-ui h3 { color: var(--acc); font-size: 13px; margin: 10px 0 6px; }
+    #vw-ui .it { display: block; width: 100%; text-align: left; padding: 5px 8px; margin: 2px 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; color: var(--txt); cursor: pointer; font-size: 12px; }
+    #vw-ui .it:hover { border-color: var(--acc); }
+    #vw-ui .it.on { border-color: var(--acc); color: var(--acc); }
+    #vw-info { position: fixed; top: 12px; right: 12px; z-index: 50; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 14px; font-size: 12px; max-width: 320px; color: var(--txt); }
+    #vw-info b { color: var(--acc); font-size: 15px; }
+    #vw-info .dim { color: var(--dim); }
+    #vw-tools { position: fixed; bottom: 12px; left: 250px; z-index: 50; display: flex; gap: 10px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 8px 12px; font-size: 12px; color: var(--dim); }
+    #vw-tools label { display: flex; align-items: center; gap: 4px; cursor: pointer; }
+    #vw-stage { position: fixed; inset: 0; pointer-events: none; }
+    /* 碰撞箱编辑面板 */
+    #vw-col { position: fixed; right: 12px; top: 150px; z-index: 50; width: 300px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--txt); max-height: 70vh; overflow-y: auto; }
+    #vw-col h3 { color: var(--acc); font-size: 13px; margin: 0 0 8px; }
+    #vw-col-list { max-height: 150px; overflow-y: auto; margin-bottom: 8px; }
+    #vw-col-list .cit { display: flex; align-items: center; gap: 5px; width: 100%; text-align: left; padding: 3px 8px; margin: 2px 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; color: var(--txt); cursor: pointer; font-size: 11px; font-family: monospace; }
+    #vw-col-list .cit.on { border-color: #00e0ff; color: #00e0ff; }
+    #vw-col-list .cit input { flex: none; margin: 0; }
+    #vw-col-list .cit span { flex: 1; }
+    #vw-mesh-list { max-height: 170px; overflow-y: auto; margin-bottom: 6px; }
+    #vw-mesh-list .cit { display: flex; align-items: center; gap: 5px; width: 100%; text-align: left; padding: 3px 8px; margin: 2px 0; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; color: var(--txt); cursor: pointer; font-size: 11px; font-family: monospace; }
+    #vw-mesh-list .cit.on { border-color: var(--acc); color: var(--acc); }
+    #vw-mesh-list .cit input { flex: none; margin: 0; }
+    #vw-mesh-list .cit span { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    #vw-col .row { display: flex; gap: 4px; align-items: center; margin: 4px 0; }
+    #vw-col .row span { width: 30px; color: var(--dim); }
+    #vw-col input { width: 0; flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 5px; color: var(--txt); padding: 3px 4px; font-size: 11px; }
+    #vw-col .btns button { flex: 1; padding: 4px 8px; font-size: 11px; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; color: var(--txt); cursor: pointer; }
+    #vw-col .btns button:hover { border-color: var(--acc); }
+    #vw-col-json { width: 100%; height: 90px; margin-top: 6px; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; color: var(--dim); font-size: 10px; font-family: monospace; resize: none; }
+    #vw-col-status { font-size: 11px; color: var(--acc); min-height: 15px; margin-top: 4px; }
+    /* 模型编辑面板 */
+    #vw-mesh { position: fixed; right: 12px; bottom: 12px; z-index: 50; width: 300px; background: var(--panel); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; font-size: 12px; color: var(--txt); }
+    #vw-mesh h3 { color: var(--acc); font-size: 13px; margin: 0 0 6px; }
+    #vw-mesh .row { display: flex; gap: 4px; align-items: center; margin: 4px 0; }
+    #vw-mesh .row span { width: 30px; color: var(--dim); }
+    #vw-mesh input[type=number] { width: 0; flex: 1; background: var(--panel2); border: 1px solid var(--line); border-radius: 5px; color: var(--txt); padding: 3px 4px; font-size: 11px; }
+    #vw-mesh input[type=color] { flex: 1; height: 22px; border: 1px solid var(--line); border-radius: 5px; background: var(--panel2); }
+    #vw-mesh .btns button { flex: 1; padding: 4px 8px; font-size: 11px; background: var(--panel2); border: 1px solid var(--line); border-radius: 6px; color: var(--txt); cursor: pointer; }
+    #vw-mesh .btns button:hover { border-color: var(--acc); }
+  </style>
+  <script type="module" crossorigin src="./assets/viewer-C-AbfaPi.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/buildings-BiWVDAzb.js">
+  <link rel="modulepreload" crossorigin href="./assets/shipmodel-CcVbwoMr.js">
+  <link rel="stylesheet" crossorigin href="./assets/buildings-Dn9Taa38.css">
+</head>
+<body>
+  <canvas id="vw-canvas"></canvas>
+  <div id="vw-ui">
+    <h2 style="color:var(--acc);margin:4px 0 8px">🧊 模型资产工作台</h2>
+    <div id="vw-list"></div>
+  </div>
+  <div id="vw-info"></div>
+  <div id="vw-tools">
+    <label><input type="checkbox" id="vw-auto" checked> 自动旋转</label>
+    <label><input type="checkbox" id="vw-colbox" checked> 碰撞箱</label>
+    <label><input type="checkbox" id="vw-wire"> 线框</label>
+    <label><input type="checkbox" id="vw-grid" checked> 网格</label>
+    <label><input type="checkbox" id="vw-double"> 双面</label>
+  </div>
+  <!-- 碰撞箱编辑面板（选中含 Col_* 的 GLB 模型时出现） -->
+  <div id="vw-col" class="hidden">
+    <h3>碰撞箱（Col_*）</h3>
+    <div id="vw-col-list"></div>
+    <div id="vw-col-form" class="hidden">
+      <div class="row"><span>中心</span><input data-f="cx" type="number" step="0.05"><input data-f="cy" type="number" step="0.05"><input data-f="cz" type="number" step="0.05"></div>
+      <div class="row"><span>尺寸</span><input data-f="sx" type="number" step="0.05" min="0.02"><input data-f="sy" type="number" step="0.05" min="0.02"><input data-f="sz" type="number" step="0.05" min="0.02"></div>
+      <div class="row"><span>旋转°</span><input data-f="rx" type="number" step="5"><input data-f="ry" type="number" step="5"><input data-f="rz" type="number" step="5"></div>
+      <div class="row btns"><button id="vw-col-del">删除盒</button></div>
+    </div>
+    <div class="row btns"><button id="vw-col-add">新增盒</button><button id="vw-col-export">导出 JSON</button></div>
+    <div class="row btns"><button id="vw-col-save">保存并应用</button><button id="vw-col-reset">重置</button></div>
+    <div id="vw-col-status"></div>
+    <textarea id="vw-col-json" readonly placeholder="导出的碰撞箱 JSON（可复制回写生成器）"></textarea>
+  </div>
+  <!-- 模型编辑面板（部件列表 + 属性；也可勾拾取模式点击场景选中） -->
+  <div id="vw-mesh">
+    <h3>模型编辑</h3>
+    <div id="vw-mesh-list"></div>
+    <label class="row"><input type="checkbox" id="vw-pick"> 拾取模式（点击模型部件）</label>
+    <div id="vw-mesh-form" class="hidden">
+      <div class="dim" id="vw-mesh-name" style="font-family:monospace;margin:4px 0"></div>
+      <div class="row"><span>移动</span><input data-m="px" type="number" step="0.05"><input data-m="py" type="number" step="0.05"><input data-m="pz" type="number" step="0.05"></div>
+      <div class="row"><span>缩放</span><input data-m="sx" type="number" step="0.05" min="0.02"><input data-m="sy" type="number" step="0.05" min="0.02"><input data-m="sz" type="number" step="0.05" min="0.02"></div>
+      <div class="row"><span>颜色</span><input data-m="color" type="color"></div>
+      <div class="row btns"><button id="vw-mesh-del">删除部件</button><button id="vw-mesh-export">导出 JSON</button></div>
+      <div class="row btns"><button id="vw-mesh-save">保存并应用（自动重生成）</button></div>
+      <div id="vw-mesh-status" style="font-size:11px;color:var(--acc);min-height:14px"></div>
+      <div class="dim" style="font-size:10px">注：合并网格按材质成组，编辑粒度=材质组/独立节点；导出 JSON 供回写生成器参考</div>
+    </div>
+  </div>
+</body>
+</html>

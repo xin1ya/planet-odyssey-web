@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>星球漫游者 Planet Odyssey</title>
+  <style>
+    /* 装饰资产引用(放内联:相对页面解析,GitHub Pages 子路径下可用;style.css 里用绝对路径会 404) */
+    #avatar::after { content: ''; position: absolute; inset: -11%; background: url('assets/ui/deco/ring.svg') center / contain no-repeat; pointer-events: none; }
+    .panel {
+      background-image: url('assets/ui/deco/corner-tl.svg'), url('assets/ui/deco/corner-tr.svg'), url('assets/ui/deco/corner-br.svg'), url('assets/ui/deco/corner-bl.svg');
+      background-repeat: no-repeat;
+      background-position: 5px 5px, right 5px top 5px, right 5px bottom 5px, left 5px bottom 5px;
+      background-size: 4.6vh;
+    }
+    #quest-tracker, #tutorial-hint, #build-hud, #hotbar {
+      background-image: url('assets/ui/deco/corner-tl.svg'), url('assets/ui/deco/corner-tr.svg'), url('assets/ui/deco/corner-br.svg'), url('assets/ui/deco/corner-bl.svg');
+      background-repeat: no-repeat;
+      background-position: 4px 4px, right 4px top 4px, right 4px bottom 4px, left 4px bottom 4px;
+      background-size: 3.2vh;
+    }
+    #hand-item {
+      background-image: url('assets/ui/deco/corner-tl.svg'), url('assets/ui/deco/corner-tr.svg'), url('assets/ui/deco/corner-br.svg'), url('assets/ui/deco/corner-bl.svg');
+      background-repeat: no-repeat;
+      background-position: 2px 2px, right 2px top 2px, right 2px bottom 2px, left 2px bottom 2px;
+      background-size: 2vh;
+    }
+  </style>
+  <script type="module" crossorigin src="./assets/main-D4rzDG-g.js"></script>
+  <link rel="modulepreload" crossorigin href="./assets/buildings-BiWVDAzb.js">
+  <link rel="modulepreload" crossorigin href="./assets/shipmodel-CcVbwoMr.js">
+  <link rel="stylesheet" crossorigin href="./assets/buildings-Dn9Taa38.css">
+</head>
+<body>
+  <div id="app">
+    <canvas id="game"></canvas>
+
+    <!-- 游戏内 HUD -->
+    <div id="hud" class="hidden">
+      <div id="bars">
+        <div id="avatar"><img src="assets/ui/avatar.svg" alt=""></div>
+        <div class="bars-col">
+          <div class="bar hp"><img class="bicon" src="assets/ui/hp.svg" alt="生命"><div class="track"><span class="bar-fill"></span><span class="btext"></span></div></div>
+          <div class="bar hunger"><img class="bicon" src="assets/ui/hunger.svg" alt="饱食"><div class="track"><span class="bar-fill"></span><span class="btext"></span></div></div>
+          <div class="bar thirst"><img class="bicon" src="assets/ui/thirst.svg" alt="水分"><div class="track"><span class="bar-fill"></span><span class="btext"></span></div></div>
+          <div class="bar temp"><img class="bicon" src="assets/ui/temp.svg" alt="体温"><div class="track"><span class="bar-fill"></span><span class="btext"></span></div></div>
+          <div class="bar stamina"><img class="bicon" src="assets/ui/stamina.svg" alt="体力"><div class="track"><span class="bar-fill"></span><span class="btext"></span></div></div>
+        </div>
+      </div>
+      <div id="quest-tracker"></div>
+      <div id="map-wrap">
+        <div id="compass"><img class="cface" src="assets/ui/deco/compass.svg" alt=""><img class="cneedle" src="assets/ui/deco/needle.svg" alt=""></div>
+        <canvas id="minimap" width="256" height="256"></canvas>
+        <div id="map-info"><span id="clock"></span><span id="coords"></span></div>
+      </div>
+      <div id="ship-indicator" class="hidden">🚀</div>
+      <div id="search-ind" class="hidden"></div>
+      <div id="death-ind" class="hidden"></div>
+      <div id="quest-ind" class="hidden"></div>
+      <div id="crosshair"></div>
+      <div id="target-bar" class="hidden">
+        <div id="target-name"></div>
+        <div class="tbar"><span class="tbar-fill" id="target-fill"></span></div>
+      </div>
+      <div id="tutorial-hint" class="hidden"></div>
+      <div id="build-hud" class="hidden"></div>
+      <div id="hurt-flash"></div>
+      <div id="boom-flash"></div>
+      <div id="cloud-flash"></div>
+      <div id="interact-prompt" class="hidden"></div>
+      <div id="hand-item"></div>
+      <div id="toasts"></div>
+      <!-- 底部栏：轮盘（左）+ 物品栏 + 背包（右） -->
+      <div id="bottom-bar">
+        <div id="quick-wheel">
+          <div id="qw-items" class="hidden"></div>
+          <button id="qw-toggle" title="菜单 (Q)"><img src="assets/ui/menu.svg" alt="菜单"></button>
+        </div>
+        <div id="hotbar"></div>
+        <button id="bag-btn" title="背包 (Tab)"><img src="assets/ui/bag.svg" alt="背包"></button>
+      </div>
+      <div id="ship-hud" class="hidden">
+        <div id="ship-fuel"><span class="bar-fill"></span></div>
+        <div id="ship-speed"></div>
+        <div id="ship-alt"></div>
+      </div>
+      <div id="boss-bar" class="hidden"></div>
+      <div id="notif"></div>
+      <div id="keys-hint">Q 菜单 · E 交互 · F 扫描 · N 视角</div>
+    </div>
+
+    <!-- 游戏内菜单层 -->
+    <div id="menus" class="hidden"></div>
+
+    <!-- 主菜单 / 弹窗层 -->
+    <div id="menu-root" class="overlay">
+      <div id="main-menu" class="panel">
+        <h1 class="title">星球漫游者</h1>
+        <p class="subtitle">PLANET ODYSSEY — 生存 · 捕捉 · 探索</p>
+        <div id="slot-list"></div>
+        <button id="btn-settings" class="btn">⚙ 设置</button>
+        <p class="hint">WASD 移动 · 鼠标视角 · E 交互 · 左键攻击 · 纯本地存档(IndexedDB)</p>
+      </div>
+      <div id="pause-menu" class="panel hidden">
+        <h2>暂停</h2>
+        <button class="btn" id="btn-resume">继续游戏</button>
+        <button class="btn" id="btn-save">💾 手动存档</button>
+        <button class="btn" id="btn-creative">🛡 创造模式：关</button>
+        <button class="btn" id="btn-help">❓ 操作说明</button>
+        <button class="btn" id="btn-quit">返回主菜单</button>
+      </div>
+      <div id="help-panel" class="panel hidden">
+        <h2>❓ 操作说明</h2>
+        <div class="help-cols">
+          <div class="help-col">
+            <h3>🚶 行走与生存</h3>
+            <table>
+              <tr><td>WASD</td><td>移动</td></tr>
+              <tr><td>鼠标</td><td>视角（准星即视线）</td></tr>
+              <tr><td>左键</td><td>攻击 / 采集（按住持续）</td></tr>
+              <tr><td>右键</td><td>使用物品 / 拉弓瞄准</td></tr>
+              <tr><td>Shift</td><td>冲刺</td></tr>
+              <tr><td>空格</td><td>跳跃</td></tr>
+              <tr><td>V</td><td>闪避（短暂无敌）</td></tr>
+              <tr><td>E</td><td>交互（登船 / 建筑 / 残骸）</td></tr>
+              <tr><td>F</td><td>扫描生物（图鉴）</td></tr>
+              <tr><td>1-9 / 滚轮</td><td>快捷栏切换</td></tr>
+            </table>
+          </div>
+          <div class="help-col">
+            <h3>🛠 建造与菜单</h3>
+            <table>
+              <tr><td>B</td><td>建造菜单（进入放置模式）</td></tr>
+              <tr><td>左键</td><td>放置（按住连续建造）</td></tr>
+              <tr><td>右键 / Esc</td><td>退出建造</td></tr>
+              <tr><td>R</td><td>旋转建筑</td></tr>
+              <tr><td>Tab</td><td>背包</td></tr>
+              <tr><td>C</td><td>制作</td></tr>
+              <tr><td>K</td><td>科技树</td></tr>
+              <tr><td>P</td><td>生物管理</td></tr>
+              <tr><td>J</td><td>图鉴</td></tr>
+              <tr><td>M</td><td>星图（跃迁）</td></tr>
+              <tr><td>Esc</td><td>暂停菜单</td></tr>
+            </table>
+          </div>
+          <div class="help-col">
+            <h3>🚀 飞船</h3>
+            <table>
+              <tr><td>W / S</td><td>油门加速 / 减速</td></tr>
+              <tr><td>鼠标</td><td>俯仰 / 偏航</td></tr>
+              <tr><td>A / D</td><td>转向</td></tr>
+              <tr><td>空格</td><td>上升</td></tr>
+              <tr><td>Shift</td><td>下降</td></tr>
+              <tr><td>F</td><td>降落</td></tr>
+              <tr><td>E</td><td>下船</td></tr>
+              <tr><td>M</td><td>星图跃迁</td></tr>
+            </table>
+            <p class="dim2">💡 提示：准星对准目标会显示血条；<br>采集需对应工具（斧/镐）；<br>捕捉球需先削弱野生生物。</p>
+          </div>
+        </div>
+        <button class="btn primary" id="btn-help-close">知道了</button>
+      </div>
+      <div id="settings-menu" class="panel hidden">
+        <h2>设置</h2>
+        <div class="row"><label>画质</label><select id="set-quality">
+          <option value="low">低</option><option value="med" selected>中</option><option value="high">高</option></select></div>
+        <div class="row"><label>渲染距离</label><select id="set-dist">
+          <option value="2">近</option><option value="3" selected>中</option><option value="4">远</option></select></div>
+        <div class="row"><label>植被密度</label><select id="set-veg">
+          <option value="0.5">低</option><option value="1" selected>中</option><option value="1.5">高</option></select></div>
+        <div class="row"><label>阴影</label><select id="set-shadow"><option value="0">关</option><option value="1" selected>开</option></select></div>
+        <div class="row"><label>音乐</label><input type="range" id="set-music" min="0" max="1" step="0.05" value="0.6"></div>
+        <div class="row"><label>音效</label><input type="range" id="set-sfx" min="0" max="1" step="0.05" value="0.9"></div>
+        <div class="row"><label>环境声</label><input type="range" id="set-amb" min="0" max="1" step="0.05" value="0.7"></div>
+        <div class="row"><label>鼠标灵敏度</label><input type="range" id="set-sens" min="0.3" max="2" step="0.05" value="1"></div>
+        <div class="row"><label>反转Y轴</label><select id="set-inv"><option value="0">否</option><option value="1">是</option></select></div>
+        <div class="row"><label>死亡不掉落</label><select id="set-keepinv"><option value="0">掉落背包</option><option value="1">不掉落</option></select></div>
+        <div class="row"><label>自动存档</label><select id="set-autosave">
+          <option value="0">关闭</option><option value="30">30 秒</option><option value="60" selected>60 秒</option><option value="120">2 分钟</option></select></div>
+        <button class="btn" id="btn-settings-back">返回</button>
+      </div>
+      <div id="death-screen" class="panel hidden">
+        <h2>💀 你死了</h2>
+        <p>背包物品掉落在原地，快去捡回来！</p>
+        <button class="btn" id="btn-respawn">复活</button>
+      </div>
+      <div id="ending" class="panel hidden">
+        <h2>🌌 旅程的终点</h2>
+        <p id="ending-text" style="line-height:1.9;color:var(--dim)"></p>
+        <button class="btn primary" id="btn-ending-quit">返回主菜单</button>
+      </div>
+      <div id="cutscene" class="hidden"></div>
+      <div id="name-dialog" class="hidden">
+        <div class="panel" style="max-width:340px">
+          <h2>🐾 给新伙伴取名</h2>
+          <input id="name-input" maxlength="12" style="width:100%;padding:8px;margin:10px 0;border-radius:8px;border:1px solid var(--line);background:#0d1524;color:var(--txt);font-size:15px">
+          <div style="display:flex;gap:8px">
+            <button class="btn primary" id="btn-name-ok" style="flex:1">✅ 确认</button>
+            <button class="btn" id="btn-name-skip" style="flex:1">⏭ 跳过</button>
+          </div>
+        </div>
+      </div>
+      <div id="loading" class="hidden"><div class="spin"></div><p id="loading-text">正在生成星球…</p></div>
+    </div>
+  </div>
+</body>
+</html>
