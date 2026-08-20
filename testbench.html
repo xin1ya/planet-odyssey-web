@@ -42,10 +42,19 @@
     #tq-form .frow label { flex: 1; }
     #tq-form button { padding: 5px 10px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel2); color: var(--txt); cursor: pointer; font-size: 12px; }
     #tb-quest.hidden, #tq-form.hidden { display: none; }
+    /* 地图设计模式 */
+    #tb-map { position: fixed; top: 46px; left: 220px; right: 0; bottom: 0; z-index: 40; background: #2a3550; display: flex; flex-direction: column; }
+    #tm-toolbar { display: flex; gap: 8px; align-items: center; padding: 8px 12px; background: var(--panel); border-bottom: 1px solid var(--line); font-size: 12px; color: var(--txt); }
+    #tm-toolbar .act { padding: 4px 10px; border-radius: 7px; border: 1px solid var(--line); background: var(--panel2); color: var(--txt); cursor: pointer; font-size: 12px; }
+    #tm-toolbar select { padding: 4px 8px; border: 1px solid var(--line); border-radius: 7px; background: var(--panel2); color: var(--txt); font-size: 12px; }
+    #tm-msg { font-size: 12px; color: var(--dim); }
+    #tm-msg.err { color: var(--red); }
+    #tm-canvas { flex: 1; width: 100%; cursor: grab; }
+    #tb-map.hidden { display: none; }
   </style>
-  <script type="module" crossorigin src="./assets/testbench-ow7NbE5U.js"></script>
+  <script type="module" crossorigin src="./assets/testbench-C559zyEq.js"></script>
   <link rel="modulepreload" crossorigin href="./assets/buildings-C1PFg7Hp.js">
-  <link rel="modulepreload" crossorigin href="./assets/questgraph-CybO3CU3.js">
+  <link rel="modulepreload" crossorigin href="./assets/questgraph-s-oqvwHy.js">
   <link rel="stylesheet" crossorigin href="./assets/buildings-BJbKXvUP.css">
 </head>
 <body>
@@ -55,6 +64,7 @@
     <button class="tab on" data-m="build">🧱 建筑拼装</button>
     <button class="tab" data-m="creature">🐾 生物动作</button>
     <button class="tab" data-m="quest">📋 任务看板</button>
+    <button class="tab" data-m="map">🗺 地图设计</button>
     <span style="flex:1"></span>
     <button class="act" id="tb-export">导出 JSON</button>
     <button class="act" id="tb-import">导入</button>
@@ -70,6 +80,15 @@
     </div>
     <div id="tq-board"></div>
     <div id="tq-form" class="hidden"></div>
+  </div>
+  <div id="tb-map" class="hidden">
+    <div id="tm-toolbar">
+      <label>星球 <select id="tm-planet"></select></label>
+      <button class="act" id="tm-fit">适配区域</button>
+      <button class="act" id="tm-check">边界/出口检查</button>
+      <span id="tm-msg"></span>
+    </div>
+    <canvas id="tm-canvas"></canvas>
   </div>
   <div id="tb-side" class="hidden"></div>
   <div id="tb-hint"></div>
